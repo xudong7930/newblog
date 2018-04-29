@@ -42,6 +42,10 @@ return [
     */
 
     'disks' => [
+        'youtube' => [
+            'driver' => 'local',
+            'root' => config('app.downpath')
+        ],
 
         'local' => [
             'driver' => 'local',

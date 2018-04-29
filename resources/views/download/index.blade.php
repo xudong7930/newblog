@@ -1,25 +1,27 @@
-<!doctype html>
-<html>
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>newblog</title>
-        <link rel="stylesheet" type="text/css" href="{{asset('css/app.css')}}">
-    </head>
-    <body>
-        <div class="container">
-            <div class="row">
-                <form method="POST" action="{{route('download.run')}}">
-                    {{ csrf_field() }}
-                    <div class="form-group">
-                        <label>Download Links</label>
-                        <textarea name="links" class="form-control" rows="10" required></textarea>
-                        <p class="help-block">一行一个下载地址</p>
-                    </div>
-                    <button type="submit" class="btn btn-primary">download youtube</button>
-                </form>
+@extends('app')
+@section('content')
+    <form method="POST" action="{{route('download.run')}}">
+        {{ csrf_field() }}
+        <div class="checkbox">
+            <label>下载工具</label>
+            <div>
+                <div class="radio-inline">
+                    <label><input type="radio" name="tool" value="yd" checked="true"> youtube-dl</label></div>
+
+                <div class="radio-inline">
+                    <label><input type="radio" name="tool" value="ydp"> youtube-dl-playlist</label></div>
+
+                <div class="radio-inline">
+                    <label><input type="radio" name="tool" value="wget"> Wgets </label></div>
+
+                <div class="radio-inline">
+                    <label><input type="radio" name="tool" value="axel"> Axel </label></div></div>
             </div>
         </div>
-    </body>
-</html>
+        <div class="form-group">
+            <label>下载地址</label>
+            <textarea name="links" class="form-control" style="font-size: 140%" rows="10" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">开始下载</button>
+    </form>    
+@stop
