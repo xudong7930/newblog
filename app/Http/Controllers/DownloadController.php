@@ -39,7 +39,9 @@ class DownloadController extends Controller
             }
             $assets[] = [
                 'title' => $dir,
-                'type' => 'folder'
+                'type' => 'folder',
+                'size' => null,
+                'date' => null
             ];
         }
 

@@ -22,7 +22,7 @@ add('shared_files', []);
 add('shared_dirs', []);
 
 // Writable dirs by web server 
-add('writable_dirs', ['storage', 'bootstrap/cache']);
+add('writable_dirs', ['storage', 'bootstrap']);
 
 
 // Hosts
@@ -31,14 +31,14 @@ host('45.32.77.118')
 	->stage('product')
 	->port('30011')
 	->user('www-data')
-	->identityFile('~/.ssh/id_rsa')
+	->identityFile('~/.ssh2/id_rsa')
 	->addSshOption('UserKnownHostsFile', '/dev/null')
 	->addSshOption('StrictHostKeyChecking', 'no')
     ->set('deploy_path', '~/{{application}}');    
     
 // Tasks
 task('fix:env', function() {
-	run("cat {{release_path}}/.env.example > {{release_path}}/../../shared/.env");
+	run("echo product > {{release_path}}/../../shared/.env");
 });
 
 task('fix:problem', function () {
