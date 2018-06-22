@@ -2,60 +2,92 @@
 namespace Deployer;
 
 require 'recipe/laravel.php';
+set_time_limit(0);
 
-// Project name
 set('application', 'newblog');
-
-// Project repository
-set('repository', 'https://github.com/xudong7930/newblog.git');
-
-// [Optional] Allocate tty for git clone. Default value is false.
+set('repository', 'git@github.com:xudong7930/newblog.git');
 set('git_tty', true); 
 set('keep_releases', 5);
-set('branch', 'master');
-set('ssh_multiplexing', true);
-set('http_user', 'www-data');
-set('writable_mode', 'chmod');
+set('writable_use_sudo', true);
+set('cleanup_use_sudo', true);
 
-// Shared files/dirs between deploys 
+// 分享文件即目录，通常也不用改，默认包含了 storage 目录
 add('shared_files', []);
 add('shared_dirs', []);
-
-// Writable dirs by web server 
-add('writable_dirs', ['storage', 'bootstrap']);
-
+add('writable_dirs', []);
 
 // Hosts
-
+// 生产用的主机
 host('45.32.77.118')
 	->stage('product')
+	->user('deployer')
 	->port('30011')
-	->user('www-data')
-	->identityFile('~/.ssh2/id_rsa')
-	->addSshOption('UserKnownHostsFile', '/dev/null')
-	->addSshOption('StrictHostKeyChecking', 'no')
-    ->set('deploy_path', '~/{{application}}');    
-    
+	->set('branch', 'master') // 最新的主分支部署到生产机
+    ->set('deploy_path', '/usr/local/html/{{application}}')
+    ->set('http_user', 'www-data') // 这个与 nginx 里的配置一致  
+    ->identityFile('~/.ssh/id_rsa')
+    ->forwardAgent(true)
+    ->multiplexing(true)
+    ->addSshOption('UserKnownHostsFile', '/dev/null')
+    ->addSshOption('StrictHostKeyChecking', 'no');
+
 // Tasks
-task('fix:env', function() {
-	run("echo product > {{release_path}}/../../shared/.env");
+// 任务：重置 opcache 缓存
+task('reset_opcache', function() {
+	run("pwd");
+	// run('{{bin/php}} -r \'opcache_reset();\'');
 });
 
-task('fix:problem', function () {
-    $cmd = <<<EOF
-rm -fr {{release_path}}/bootstrap/cache/*
-chmod -R 777 {{release_path}}/bootstrap/cache
-chmod -R 777 {{release_path}}/../../shared/storage
-EOF;
-	run($cmd);
+// 任务：重启 php-fpm 服务
+task('restart_phpfpm', function () {
+    run('sudo /etc/init.d/php-fpm restart');
+});
+
+// 任务：supervisor reload
+task('reload_supervisor', function () {
+    run('sudo supervisorctl reload');
+});
+
+// 任务: 发送部署成功提醒
+task('send_message', function () {
+    run("pwd");
+});
+
+task('set_env', function () {
 	within('{{release_path}}', function () {
-        run("php artisan key:generate;"); 
-    });
-    writeln("fix laravel problem");
+		run("echo product > .env");
+	});
 });
 
-task('after:success', ['fix:problem']);
+task('clear_cache', function() {
+	within('{{release_path}}', function () {
+		run("php artisan view:clear");
+		run("php artisan route:clear");
+		run("php artisan cache:clear");
+		run("php artisan config:clear");
+		run("php artisan view:clear");
+		run("php artisan clear-compiled");
+	});
+});
 
-before('deploy:vendors', 'fix:env');
-after('success', 'after:success');
+task('make_cache', function() {
+	within('{{release_path}}', function () {
+		run("php artisan route:cache");
+		run("php artisan config:cache");
+	});
+});
+
+// 执行自定义任务，注意时间点是 current 已经成功链向新部署的目录之后
+after('deploy:symlink', 'clear_cache');
+after('deploy:symlink', 'set_env');
+after('deploy:symlink', 'make_cache');
+after('deploy:symlink', 'restart_phpfpm');
+after('deploy:symlink', 'reload_supervisor');
+after('deploy:symlink', 'reset_opcache');
+
 after('deploy:failed', 'deploy:unlock');
+after('success', 'send_message');
+
+// Migrate database before symlink new release.
+// 执行数据库迁移，建议删掉，迁移虽好，但毕竟高风险，只推荐用于开发环境
+// before('deploy:symlink', 'artisan:migrate');
