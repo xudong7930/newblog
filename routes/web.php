@@ -4,6 +4,10 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/snippet-generator', function() {
+	return view('snippet-generator.index');
+});
+
 Route::get('/download/filelist', 'DownloadController@filelist')->name('download.filelist');
 Route::delete('/download/filelist/{title}', 'DownloadController@fileDestroy')->name('file.destroy');
 Route::get('/download', 'DownloadController@show')->name('download.show');
