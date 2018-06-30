@@ -72,7 +72,7 @@ task('clear_cache', function() {
 
 task('make_cache', function() {
 	within('{{release_path}}', function () {
-		run("php artisan route:cache");
+		// run("php artisan route:cache");
 		run("php artisan config:cache");
 	});
 });
